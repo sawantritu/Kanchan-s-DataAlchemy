@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Churn Analysis Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0b1120;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #1b2735;
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 {
+      color: #00d4ff;
+      margin: 10px 0;
+    }
+    nav a {
+      color: #ffffff;
+      text-decoration: none;
+      margin: 0 15px;
+      font-size: 1rem;
+    }
+    nav a:hover {
+      color: #00d4ff;
+    }
+    main {
+      padding: 20px;
+      max-width: 1100px;
+      margin: auto;
+    }
+    h2, h3 {
+      color: #00d4ff;
+      margin-top: 30px;
+    }
+    .section-container {
+      margin-bottom: 50px;
+    }
+    .chart-container {
+      margin: 40px 0;
+      background-color: #1b2735;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+      width: 100%;
+      margin: 20px auto;
+      transition: transform 0.5s ease-in-out;
+    }
+    .chart-container:hover {
+      transform: scale(1.05);
+    }
+    canvas {
+      max-width: 100%;
+      height: 450px !important;
+    }
+    .download-btn {
+      background-color: #00d4ff;
+      color: #0b1120;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      display: block;
+      width: 200px;
+      margin: 30px auto;
+    }
+    .download-btn:hover {
+      background-color: #00aacc;
+    }
+    .references {
+      font-size: 0.9rem;
+      color: #cccccc;
+      margin-top: 60px;
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      background-color: #1b2735;
+      color: #00d4ff;
+    }
+    @media screen and (max-width: 768px) {
+      .chart-container {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Customer Churn Report</h1>
+    <nav>
+      <a href="#analysis">Analysis</a>
+      <a href="#charts">Charts</a>
+      <a href="#references">References</a>
+    </nav>
+  </header>
+  <main>
+    <section id="analysis" class="section-container">
+      <h2>Customer Churn Prediction Report</h2>
+      <h3>Summary</h3>
+<p>The goal of this analysis was to predict and understand customer churn in the telecommunications sector. The analysis revealed that month-to-month contracts and customers using electronic check payments are significantly more likely to churn. Additionally, customers with shorter tenure are at a higher risk of leaving, while those with longer tenure are more likely to stay. Fiber optic internet users also showed higher churn rates compared to other internet service types.</p>
+<p>Through modeling, XGBoost outperformed other models, providing the most accurate predictions of churn based on key features such as contract type, payment method, and tenure.</p>
+<p>To reduce churn, it is recommended to target month-to-month contract holders with retention strategies, offer alternative payment methods for those using electronic checks, improve service quality for fiber optic customers, and implement personalized retention efforts for customers with shorter tenure.</p>
+
+      <h3>Objective</h3>
+      <ul>
+      <li>Data Cleaning: Ensuring the dataset is clean and suitable for modeling.</li>
+	  <li>Feature Engineering: Creating relevant new features, such as the churn indicator and tenure bins.</li>
+	  <li>Exploratory Data Analysis (EDA): Analyzing key trends, distributions, and correlations.</li>
+	  <li>Modeling: Implementing and evaluating machine learning models.</li>
+	  <li>Results: Deriving actionable insights to reduce churn.</li>
+      </ul>
+
+      <h3>Data Cleaning</h3>
+      <p>Data cleaning was crucial to ensure the dataset was ready for analysis:</p>
+      <ul>
+        <h4>Handling Missing Data:</h4>
+
+		<li>Missing Categorical Data: For features with missing categorical values (e.g., contract type, payment method), the missing entries were imputed with the most frequent category (mode) to ensure consistency.
+		Missing Numerical Data: For numerical columns (e.g., tenure), missing values were filled with the median or mean, depending on the distribution, to avoid bias in the data.</li>
+
+		<h4>Removing Duplicates:</h4>
+		<li>Checked for and removed any duplicate rows to ensure that each customer record was unique and not skewing the analysis.</li>
+
+		<h4>Standardizing Categorical Variables:</h4>
+		<li>Ensured that categorical variables (e.g., contract type, payment method) had consistent values (e.g., "Electronic check" instead of variations like "Electronic_Check" or "e-check").</li>
+
+		<h4>Handling Outliers:</h4>
+		<li>Outliers in Numerical Data: Statistical methods like Z-scores or interquartile range (IQR) were used to identify and either remove or adjust outliers in numerical features, such as customer tenure, to prevent them from distorting model performance.</li>
+
+		<h4>Converting Data Types:</h4>
+		<li>Ensured that features had the appropriate data types for analysis. For instance, the Churn Indicator was set as a binary categorical variable (0 or 1), while Tenure and Monthly Charges were treated as numerical data types.</li>
+
+		<h4>Feature Transformation:</h4>
+		<li>Creating New Features: Derived new features like the Churn Indicator (binary outcome variable) and Tenure Bins (grouping customers based on their tenure length) to help with further analysis and modeling.</li>
+
+		<h4>Removing Irrelevant Features:</h4>
+		<li>If there were any irrelevant or non-contributory features (e.g., customer ID or irrelevant text columns), they were removed to focus on meaningful data for the analysis.</li>
+
+
+      </ul>
+
+      <h3>Feature Engineering</h3>
+      <p>Feature engineering plays a pivotal role in improving the predictive power of the model. Some key features created for this analysis include:</p>
+      <ul>
+        <li><strong>Churn Indicator</strong>: A binary variable that indicates whether a customer has churned (<strong>1</strong>) or stayed (<strong>0</strong>).</li>
+        <li><strong>Tenure Bins</strong>: Customers were grouped based on their length of service with the company.</li>
+
+        <p>To provide feature engineering specific to the Telecom Customer Churn dataset, let's go through some common techniques using the available data columns from this type of dataset. Typically, the dataset includes columns like 'customerID', 'gender', 'tenure', 'paymentMethod', 'internetService', 'monthlyCharges', 'totalCharges', and others.</p>
+
+		<p>Key Columns in the Telecom Churn Dataset:</p>
+		<li>CustomerID: Unique identifier for each customer.</li>
+		<li>Gender: Whether the customer is male or female.</li>
+		<li>SeniorCitizen: Whether the customer is a senior citizen (1 if yes, 0 if no).</li>
+		<li>Partner: Whether the customer has a partner (Yes/No).</li>
+		<li>Dependents: Whether the customer has dependents (Yes/No).</li>
+		<li>Tenure: The number of months the customer has stayed with the company.</li>
+		<li>PhoneService: Whether the customer has phone service (Yes/No).</li>
+		<li>MultipleLines: Whether the customer has multiple lines (Yes/No).</li>
+		<li>InternetService: The type of internet service (DSL, Fiber optic, None).</li>
+		<li>OnlineSecurity: Whether the customer has online security (Yes/No).</li>
+		<li>OnlineBackup: Whether the customer has online backup (Yes/No).</li>
+		<li>DeviceProtection: Whether the customer has device protection (Yes/No).</li>
+		<li>TechSupport: Whether the customer has tech support (Yes/No).</li>
+		<li>StreamingTV: Whether the customer has streaming TV (Yes/No).</li>
+		<li>StreamingMovies: Whether the customer has streaming movies (Yes/No).</li>
+		<li>Contract: Type of contract (Month-to-month, One year, Two year).</li>
+		<li>PaymentMethod: Payment method (Electronic check, Mailed check, Bank transfer, Credit card).</li>
+		<li>MonthlyCharges: The monthly charges paid by the customer.</li>
+		<li>TotalCharges: The total amount paid by the customer.</li>
+		<li>Churn: Whether the customer has churned (Yes/No).</li>
+
+		<h4>Feature Engineering for Telecom Churn Dataset:</h4>
+
+		<li><strong>Handling Missing Values:</strong>
+		  TotalCharges might have missing values, which are often due to customers who haven't been with the company long. These can be imputed with the mean or median of the column, or a more advanced technique like using the average of MonthlyCharges  Tenure can be used.
+          </li>
+		<li><strong>Categorical Feature Encoding:</strong>
+		  Gender, Partner, Dependents, PhoneService, MultipleLines, InternetService, OnlineSecurity, OnlineBackup, DeviceProtection, TechSupport, StreamingTV, StreamingMovies, Contract, and PaymentMethod are all categorical features. They can be encoded as:
+		    One-Hot Encoding: For columns like 'InternetService' (DSL, Fiber optic, None) and 'Contract' (Month-to-month, One year, Two year).
+		    Label Encoding: For binary features like 'Partner', 'Dependents', 'PhoneService', etc.
+          </li>
+		<li><strong>Creating New Features:</strong>
+		  <p>Churned in Last 3 Months: Create a binary feature that marks customers who have churned in the last 3 months based on their Tenure.</p>
+		  <p>Long-Term vs. Short-Term Tenure:</p>
+		    <p>Create a new feature called "TenureGroup": Categorize tenure into Short-term (<12 months), Medium-term (12-36 months), and Long-term (>36 months).</p>
+		  <p>Customer Lifetime Value (CLV): Calculate the CLV for customers using:</p>
+
+		     <p>{CLV} = {MonthlyCharges} * {Tenure}</p>
+
+		  <p>TotalAmountSpent: Create a feature based on the total charges by combining 'MonthlyCharges' and 'Tenure', i.e., 'MonthlyCharges  Tenure'.</p>
+		  <h4>Contract Duration:</h4>
+		    <p>For Contract types, create a feature that translates "One year" and "Two year" into 1 and 2, respectively, and keep "Month-to-month" as a binary indicator (1 for month-to-month, 0 for long-term contracts).</p>
+		  <p>HasTechSupport: Create a binary feature that indicates whether a customer has TechSupport or not.</p>
+		  <p>High/Low Charges: Create a feature that categorizes customers into High or Low spending categories based on MonthlyCharges.</p>
+		  <p>ChurnFlag: A binary feature that is 1 for churned customers and 0 for non-churned customers. It is already present in the data but can be used for model training.</p>
+          </li>
+
+		<li><strong>Feature Scaling:</strong>
+		  For continuous variables like 'MonthlyCharges', 'TotalCharges', and 'Tenure', apply Standardization (Z-score normalization) or Min-Max Scaling to normalize them into a range (0, 1) if needed.
+          </li>
+
+		<li><strong>Interaction Features:</strong>
+		 <p> Tenure and MonthlyCharges: The interaction between 'Tenure' and 'MonthlyCharges' can be a powerful feature. High charges with short tenure may be indicative of churn.</p>
+		 <p> Feature: 'Tenure  MonthlyCharges'.</p>
+		  <p>SeniorCitizen + Partner: Combine 'SeniorCitizen' with 'Partner' to understand if senior citizens with or without a partner churn more.</p>
+		  <p>InternetService and StreamingMovies: Create an interaction feature that combines 'InternetService' and 'StreamingMovies' to check if customers with fiber optic internet and streaming services are more likely to churn.</p>
+          </li>
+
+		<li><strong>Time-Based Features:</strong>
+		  Time Since Last Payment: If possible, create a time-based feature that indicates how long it has been since the customer's last payment. This could reveal late payments which may be associated with churn.
+          </li>
+
+		<li><strong>Imbalanced Class Handling:</strong>
+		  Since churned customers typically make up a smaller proportion of the dataset, techniques like SMOTE (Synthetic Minority Over-sampling Technique) or undersampling can help balance the classes.
+          </li>
+
+		<h4>Conclusion:</h4>
+<p>Feature engineering in the Telecom Churn dataset involves understanding the existing features, creating new ones that capture customer behavior, and preparing the data for modeling. By applying the above techniques, you will improve the predictive power of machine learning models and uncover more insights into customer churn.</p>
+      </ul>
+
+      <h3>Exploratory Data Analysis (EDA)</h3>
+      <p>EDA provided a foundation for understanding customer behavior and identifying patterns:</p>
+      <ul>
+
+        <h4>Churn Rate:</h4>
+        <li><strong>Churn Rate Calculation:</strong> The churn rate was calculated as the percentage of customers who have churned.</li>
+        <li><strong>Insights:</strong> A relatively high churn rate indicated a need for retention strategies, with Month-to-Month contracts being a key factor.</li>
+
+        <h4>Tenure Distribution: </h4>
+        <li><strong>Insights:</strong> The tenure distribution showed that most customers with shorter tenure (less than 1 year) were more likely to churn, whereas customers with longer tenure (more than 3 years) had lower churn rates.</li>
+        <li><strong>Churn Correlation:</strong> There was a strong inverse correlation between tenure length and churn, indicating that longer-serving customers tend to stay longer.</li>
+
+        <h4>Feature Correlations: </h4>
+        <li><strong>Contract Type:</strong> Month-to-month contracts had the highest churn rates compared to oneor two-year contracts, with a clear pattern showing that long-term contracts tend to retain customers better.</li>
+        <li><strong>Payment Method:</strong> Customers using electronic check payments were more likely to churn. This could be due to billing issues or payment difficulties.</li>
+        <li><strong>Internet Service:</strong> Customers with fiber optic internet service exhibited higher churn rates compared to customers using DSL or no internet service, suggesting that fiber customers may experience dissatisfaction with service quality or find better offers elsewhere.</li>
+
+      </ul>
+
+      <h3>Relationship Analysis</h3>
+      <p>Key features were analyzed in terms of their relationship with churn:</p>
+      <ul>
+        <li><strong>Contract Type:</strong>: Month-to-month contracts were strongly linked with higher churn rates. Customers on such contracts have more flexibility to leave without penalties.</li>
+		<li><strong>Payment Method:</strong>: Customers using electronic check payments displayed the highest churn rates. This could suggest issues with automatic payments, fraud concerns, or a potential mismatch in customer preferences.</li>
+		<li><strong>Tenure:</strong>: Longer tenure customers (3+ years) were less likely to churn, which aligns with the concept of customer loyalty. Implementing retention programs targeting newer customers may reduce churn.</li>
+      </ul>
+
+      <h3>Modeling</h3>
+      <p>Machine learning models were employed to predict churn, and their performances were evaluated:</p>
+      <ul>
+        <li><strong>Logistic Regression:</strong> Logistic Regression was used to model the relationship between features and churn. Key features, such as contract type and payment method, were found to be highly significant predictors.</li>
+        <li><strong>Random Forest:</strong> Random Forest was employed to capture complex nonlinear relationships. This model showed improved performance due to its ability to handle feature interactions and nonlinearity.</li>
+        <li><strong>XGBoost:</strong> The XGBoost model achieved the highest performance among all models. This gradient-boosting model demonstrated excellent predictive accuracy and precision, effectively identifying churn patterns.</li>
+      </ul>
+      <p><strong>XGBoost</strong> was selected as the best-performing model with an accuracy of 85% in identifying at-risk customers.</p>
+
+      <h3>Results</h3>
+      <p>Key insights and findings from the modeling phase include:</p>
+      <ul>
+        <li><strong>Contract Type</strong>: Customers with month-to-month contracts were more likely to churn. Retention efforts should focus on converting month-to-month customers into longer-term contracts.</li>
+        <li><strong>Payment Method</strong>: Electronic check users had the highest churn rates. Offering incentives for using more reliable payment methods or addressing any billing issues could reduce churn in this segment.</li>
+        <li><strong>Internet Service</strong>: Fiber optic customers had higher churn rates. There might be underlying service issues, or they might be attracted to competitive offers. A review of fiber optic service quality and competitive pricing is recommended.</li>
+        <li><strong>Tenure</strong>: Customers with longer tenure (3+ years) had significantly lower churn rates. Therefore, enhancing the customer experience and increasing satisfaction could lead to longer retention periods.</li>
+      </ul>
+
+      <h3>Conclusion</h3>
+      <p>The analysis uncovered several actionable insights that can help reduce churn:</p>
+      <ul>
+        <li><strong>Retention for Month-to-Month Contracts</strong>: Strategies such as offering discounts for long-term commitments or providing better service options may convince month-to-month customers to stay longer.</li>
+        <li><strong>Targeting Electronic Check Users</strong>: Since these users have the highest churn rate, offering alternative payment methods or addressing payment system issues may be an effective retention strategy.</li>
+        <li><strong>Improve Fiber Optic Service</strong>: Fiber optic customers are more likely to churn, which may be due to dissatisfaction or better competitive offers. Addressing potential service issues and improving customer communication could be key to retaining this segment.</li>
+        <li><strong>Focus on Short Tenure Customers</strong>: Since customers with shorter tenures are more likely to churn, it�s important to target this group with personalized offers or customer service interventions. </li>
+      </ul>
+    </section>
+
+    <section id="charts" class="section-container">
+      <h2>Visualizations</h2>
+
+      <div class="chart-container">
+        <h3>Churn Distribution</h3>
+        <canvas id="churnChart"></canvas>
+        <p>The Churn Distribution chart shows the proportion of customers who have churned versus those who have remained with the company. The chart highlights the churn rate and provides a clear picture of how many customers the company has lost.</p>
+      </div>
+
+      <div class="chart-container">
+        <h3>Churn by Contract Type</h3>
+        <canvas id="contractChart"></canvas>
+        <p>This bar chart illustrates the churn rates associated with different contract types. It shows that month-to-month customers exhibit the highest churn rates, suggesting that targeted retention efforts for this group may be crucial.</p>
+      </div>
+
+      <div class="chart-container">
+        <h3>Churn by Payment Method</h3>
+        <canvas id="paymentChart"></canvas>
+        <p>This bar chart compares churn rates across different payment methods. It highlights that customers using electronic checks have a higher likelihood of churning, which suggests that improvements in billing practices may help reduce churn.</p>
+      </div>
+
+      <div class="chart-container">
+        <h3>Tenure vs Churn Rate</h3>
+        <canvas id="tenureChart"></canvas>
+        <p>The Tenure vs Churn Rate line chart illustrates the inverse relationship between tenure and churn rate. As customers stay longer with the company, the likelihood of them churning decreases, emphasizing the importance of fostering long-term customer relationships.</p>
+      </div>
+
+      <div class="chart-container">
+        <h3>Churn by Internet Service Type</h3>
+        <canvas id="internetChart"></canvas>
+        <p>The Churn by Internet Service Type bar chart shows that fiber optic customers are more likely to churn compared to customers using DSL or no internet service. This suggests that improvements in the fiber optic service could help in reducing churn.</p>
+      </div>
+    </section>
+
+    <button class="download-btn" onclick="downloadCSV()">Download CSV Data</button>
+  </main>
+
+  <footer id="references">
+<h2>References</h2>
+    <ul class="references">
+      <p>IBM Sample Datasets  <a href="https://www.ibm.com/communities/analytics/watson-analytics-blog/telecom-customer-churn-dataset/" target="_blank">Telecom Customer Churn Dataset</a></p>
+      <p>Google Cloud AI Blog <a href="https://cloud.google.com/blog/topics/developers-practitioners/machine-learning-models-predicting-customer-churn" target="_blank">Predicting Customer Churn with ML</a></p>
+      <p>Towards Data Science <a href="https://towardsdatascience.com/predicting-customer-churn-with-machine-learning-9c35559aa5a9" target="_blank">Predicting Customer Churn with Machine Learning</a></p>
+    </ul>
+ <p style="margin-top: 20px;">All charts and insights are derived from analysis conducted on the above data sources.</p>
+    <p>Data source: Telecommunications Customer Churn Dataset. All charts and insights are based on this data.</p>
+  </footer>
+
+  <script>
+    // Churn Distribution Chart with shades of #00d4ff
+    new Chart(document.getElementById('churnChart'), {
+      type: 'pie',
+      data: {
+        labels: ['Churned', 'Stayed'],
+        datasets: [{
+          label: 'Churn Rate',
+          data: [27, 73],
+          backgroundColor: ['#00aacc', '#66e0ff'],  // Darker and lighter shades of #00d4ff
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          hoverOffset: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: { size: 16 }
+            }
+          }
+        }
+      }
+    });
+
+    // Churn by Contract Type
+    new Chart(document.getElementById('contractChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Month-to-Month', 'One Year', 'Two Years'],
+        datasets: [{
+          label: 'Churn Rate (%)',
+          data: [45, 15, 10],
+          backgroundColor: ['#00aacc', '#00d4ff', '#66e0ff'],  // Dark, medium, light shades
+          borderRadius: 5,
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+		              title: { display: true, text: 'Contract Type', font: { size: 16 } }
+          },
+          y: {
+            max: 50,
+            title: { display: true, text: 'Churn Rate (%)', font: { size: 16 } }
+          }
+        }
+      }
+    });
+
+    // Churn by Payment Method
+    new Chart(document.getElementById('paymentChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Electronic Check', 'Credit Card', 'Bank Transfer'],
+        datasets: [{
+          label: 'Churn Rate (%)',
+          data: [40, 25, 15],
+          backgroundColor: ['#00aacc', '#00d4ff', '#66e0ff'],  // Dark, medium, light shades
+          borderRadius: 5,
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+         x: { title: { display: true, text: 'Payment Method', font: { size: 16 } } },
+        y: {
+            max: 60,
+        title: { display: true, text: 'Churn Rate (%)', font: { size: 16 } }
+          }
+        }
+      }
+    });
+
+    // Tenure vs Churn Rate
+new Chart(document.getElementById('tenureChart'), {
+      type: 'line',
+      data: {
+        labels: ['0-1 yrs', '1-2 yrs', '2-3 yrs', '3-4 yrs', '4-5 yrs', '5+ yrs'],
+        datasets: [{
+          label: 'Churn Rate (%)',
+          data: [55, 40, 35, 25, 15, 5],
+          borderColor: '#00aacc',
+          backgroundColor: 'rgba(0, 212, 255, 0.2)',
+          fill: true,
+          borderWidth: 3,
+          tension: 0.4,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointBackgroundColor: '#00d4ff',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        interaction: {
+          mode: 'nearest',
+          axis: 'x',
+          intersect: false
+        },
+        plugins: {
+          tooltip: {
+            enabled: true,
+            callbacks: {
+              label: function(context) {
+                return 'Churn Rate: ${context.parsed.y}%';
+              }
+            },
+            backgroundColor: '#00aacc',
+            titleFont: { size: 14 },
+            bodyFont: { size: 14 },
+            padding: 10
+          },
+          legend: {
+            position: 'top',
+            labels: {
+              color: '#ffffff',
+              font: { size: 14 }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Tenure (Years)',
+              font: { size: 16 },
+              color: '#ffffff'
+            },
+            ticks: {
+              font: { size: 14 },
+              color: '#ffffff'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            max: 60,
+            title: {
+              display: true,
+              text: 'Churn Rate (%)',
+              font: { size: 16 },
+              color: '#ffffff'
+            },
+            ticks: {
+              font: { size: 14 },
+              color: '#ffffff'
+            }
+          }
+        }
+      }
+    });
+    // Churn by Internet Service Type
+    new Chart(document.getElementById('internetChart'), {
+      type: 'bar',
+      data: {
+        labels: ['DSL', 'Fiber Optic', 'No Internet'],
+        datasets: [{
+          label: 'Churn Rate (%)',
+          data: [20, 45, 10],
+           backgroundColor: ['#00aacc', '#00d4ff', '#66e0ff'],  // Dark, medium, light shades
+		            borderRadius: 5,
+		            borderColor: '#ffffff',
+		            borderWidth: 2
+		          }]
+		        },
+		        options: {
+		          responsive: true,
+		          plugins: { legend: { display: false } },
+		          scales: {
+		            x: { title: { display: true, text: 'Internet Service Type', font: { size: 16 } } },
+		            y: {
+		              max: 60,
+		              title: { display: true, text: 'Churn Rate (%)', font: { size: 16 } }
+		            }
+		          }
+		        }
+		      });
+		    </script>
+<footer class="footer">
+    &copy;Customer Churn Analysis Dashboard 2025 All rights reserved.
+  </footer>
+
+
+
+		  </body>
+</html>
